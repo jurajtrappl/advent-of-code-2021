@@ -1,13 +1,11 @@
 type Depth = Int
 
 parseInput :: IO [Depth]
-parseInput = do
-    fContent <- readFile "01.in"
-    return $ map (\x -> read x :: Depth) $ lines fContent
+parseInput = fmap (map (\x -> read x :: Depth) . lines) (readFile "01.in")
 
 windowsOf :: Int -> [a] -> [[a]]
-windowsOf n (x:xs)
-    | length xs >= n = (x : take (n - 1) xs) : windowsOf n xs
+windowsOf size (x:xs)
+    | length xs >= size = (x : take (size - 1) xs) : windowsOf size xs
     | otherwise = [x:xs]
 
 depthSweep :: [Depth] -> Int
