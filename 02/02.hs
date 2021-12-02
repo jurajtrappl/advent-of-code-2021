@@ -1,23 +1,44 @@
-{-# OPTIONS_GHC -Wno-missing-methods #-}
+data Direction = Forward Int
+               | Down Int
+               | Up Int
+    deriving (Show)
 
-data Point = P Int Int
+type Aim = Int
+type Depth = Int
+type Horizontal = Int
 
-instance Num Point where
-    (P x y) + (P x' y') = P (x + x') (y + y')
+data SimpleState = S Horizontal Depth
+data ComplexState = C Horizontal Depth Aim
 
-parseCommand :: String -> Point
+parseCommand :: String -> Direction
 parseCommand value = case head splitted of
-    "forward" -> P num 0
-    "down" -> P 0 (-num)
-    _ -> P 0 num
+    "forward" -> Forward num
+    "down" -> Down num
+    _ -> Up num
     where splitted = words value
           num = read (last splitted) :: Int
 
-parseInput :: IO [Point]
+parseInput :: IO [Direction]
 parseInput = fmap (map parseCommand . lines) (readFile "02.in")
 
-computeResult :: Point -> Int
-computeResult (P x y) = abs (x * y)
+executeSimple :: SimpleState -> Direction -> SimpleState
+executeSimple (S h d) cmd = case cmd of
+    Down num -> S h (d + num)
+    Up num -> S h (d - num)
+    Forward num -> S (h + num) d
+
+compute :: Show b1 => (b2 -> b1) -> (b2 -> Direction -> b2) -> b2 -> IO ()
+compute formatResult executor initial =
+    parseInput >>= (print . formatResult . foldl executor initial)
 
 fstPart :: IO ()
-fstPart = parseInput >>= (print . computeResult . foldr (+) (P 0 0))
+fstPart = compute (\(S x y) -> x * y) executeSimple (S 0 0)
+
+executeComplex :: ComplexState -> Direction -> ComplexState
+executeComplex (C h d a) cmd = case cmd of
+    Down num -> C h d (a + num)
+    Up num -> C h d (a - num)
+    Forward num -> C (h + num) (d + a * num) a
+
+sndPart :: IO ()
+sndPart = compute (\(C h d _) -> h * d) executeComplex (C 0 0 0)
