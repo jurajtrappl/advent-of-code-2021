@@ -10,13 +10,16 @@ type Horizontal = Int
 data SimpleState = S Horizontal Depth
 data ComplexState = C Horizontal Depth Aim
 
+unsafeReadInt :: String -> Int
+unsafeReadInt s = read s :: Int
+
 parseCommand :: String -> Direction
 parseCommand value = case head splitted of
     "forward" -> Forward num
     "down" -> Down num
     _ -> Up num
     where splitted = words value
-          num = read (last splitted) :: Int
+          num = unsafeReadInt $ last splitted
 
 parseInput :: IO [Direction]
 parseInput = fmap (map parseCommand . lines) (readFile "02.in")
