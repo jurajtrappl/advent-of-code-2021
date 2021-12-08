@@ -1,4 +1,5 @@
 import Data.List.Split (splitOn)
+import qualified Data.Map as Map
 
 type Days = Int
 type SpawnRate = Int
@@ -22,5 +23,12 @@ simulate days spawnrates
 fstPart :: IO ()
 fstPart = parseInput >>= print . length . simulate 80
 
+countOccurences :: Int -> [SpawnRate] -> [Int]
+countOccurences (-1) _ = []
+countOccurences num rates = length (filter (==num) rates) : countOccurences (num - 1) rates
+
 sndPart :: IO ()
-sndPart = parseInput >>= print . length . simulate 256
+sndPart = do
+    spawnrates <- parseInput
+    let mem = Map.fromList $ zip [0..8] (reverse $ countOccurences 8 spawnrates)
+    print $ sum $ map snd $ Map.toList $ foldl (\acc d -> Map.updateAt (\_ _ -> Just ((acc Map.! mod d 9) + acc Map.! mod (d + 7) 9)) (mod (d + 7) 9) acc) mem [0..255]
