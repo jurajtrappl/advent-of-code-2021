@@ -3,8 +3,11 @@ import Data.List (sort)
 
 type HorizontalPos = Int
 
+unsafeReadInt :: String -> Int
+unsafeReadInt s = read s :: Int
+
 parseInput :: IO [HorizontalPos]
-parseInput = fmap (map (\s -> read s :: HorizontalPos) . splitOn ",") (readFile "07.in")
+parseInput = fmap (map unsafeReadInt . splitOn ",") (readFile "07.in")
 
 median :: [HorizontalPos] -> Int
 median pos

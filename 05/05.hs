@@ -18,9 +18,7 @@ toLine :: [Point] -> Line
 toLine pts = Line (minimum pts) (maximum pts)
 
 parseInput :: IO [Line]
-parseInput = do
-    fContent <- readFile "05.in"
-    return $ map (toLine . map toPoint . splitOn " -> ") $ lines fContent
+parseInput = fmap (map (toLine . map toPoint . splitOn " -> ") . lines) (readFile "05.in")
 
 isDiagonal :: Line -> Bool
 isDiagonal (Line (Point x1 y1) (Point x2 y2)) = abs (x1 - x2) == abs (y1 - y2)
@@ -42,13 +40,7 @@ atleastTwoIntersections :: [Point] -> Int
 atleastTwoIntersections = length . filter (>= 2) . map length . group . sort
 
 fstPart :: IO ()
-fstPart = do
-    ls <- parseInput
-    let points = concatMap getPoints $ filter (not . isDiagonal) ls
-    print $ atleastTwoIntersections points
+fstPart = parseInput >>= print . atleastTwoIntersections . concatMap getPoints . filter (not . isDiagonal)
 
 sndPart :: IO ()
-sndPart = do
-    ls <- parseInput
-    let points = concatMap getPoints ls
-    print $ atleastTwoIntersections points
+sndPart = parseInput >>= print . atleastTwoIntersections . concatMap getPoints

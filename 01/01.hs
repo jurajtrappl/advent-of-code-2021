@@ -1,7 +1,10 @@
 type Depth = Int
 
+unsafeReadInt :: String -> Int
+unsafeReadInt s = read s :: Int
+
 parseInput :: IO [Depth]
-parseInput = fmap (map (\x -> read x :: Depth) . lines) (readFile "01.in")
+parseInput = fmap (map unsafeReadInt . lines) (readFile "01.in")
 
 windowsOf :: Int -> [a] -> [[a]]
 windowsOf size (x:xs)

@@ -1,12 +1,13 @@
 import qualified Data.List as List
 import qualified Data.Map as Map
 import Data.List (sort)
+import Data.Functor((<&>))
 
 type DigitSignal = String
 type Output = String
 
 parseInput :: IO [([DigitSignal], [Output])]
-parseInput = readFile "08.in" >>= return . map ((\l -> (take 10 l, drop 11 l)) . words) . lines
+parseInput = readFile "08.in" <&> map ((\l -> (take 10 l, drop 11 l)) . words) . lines
 
 isFstPartDigit :: (Eq a, Num a) => a -> Bool
 isFstPartDigit x = x == 2 || x == 3 || x == 4 || x == 7

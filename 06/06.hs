@@ -4,8 +4,11 @@ import qualified Data.Map as Map
 type Days = Int
 type SpawnRate = Int
 
+unsafeReadInt :: String -> Int
+unsafeReadInt s = read s :: Int
+
 parseInput :: IO [SpawnRate]
-parseInput = fmap (map (\s -> read s :: SpawnRate) . splitOn ",") (readFile "06.in")
+parseInput = fmap (map unsafeReadInt . splitOn ",") (readFile "06.in")
 
 decrease :: [SpawnRate] -> [SpawnRate]
 decrease = map (\rate -> rate - 1)
