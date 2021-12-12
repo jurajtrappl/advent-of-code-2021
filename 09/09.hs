@@ -5,6 +5,7 @@ import qualified Data.Graph as Graph
 import qualified Data.Matrix as Matrix
 import Data.Maybe (isJust)
 import Data.List (foldl', sort)
+import Data.Functor ((<&>))
 
 type HeightMap = Matrix.Matrix Int
 
@@ -16,8 +17,8 @@ data Position = Pos
 unsafeReadInt :: String -> Int
 unsafeReadInt s = read s :: Int
 
-parseInput :: IO [[Int]]
-parseInput = fmap (map (map (unsafeReadInt . (:[]))) . lines) (readFile "09.in")
+parseInput :: IO HeightMap
+parseInput = fmap (map (map (unsafeReadInt . (:[]))) . lines) (readFile "09.in") <&> Matrix.fromLists
 
 validPosition :: HeightMap -> Position -> Bool
 validPosition heightMap (Pos { .. }) = isJust $ Matrix.safeGet row col heightMap
@@ -45,8 +46,7 @@ allPositions heightMap = [Pos r c | r <- [1..Matrix.nrows heightMap], c <- [1..M
 
 fstPart :: IO ()
 fstPart = do
-    input <- parseInput
-    let heightMap = Matrix.fromLists input
+    heightMap <- parseInput
     let lowPoints = findSmaller heightMap (allPositions heightMap)
     print $ sum $ toRiskLevels $ map (valueFromPos heightMap) lowPoints
 
@@ -60,8 +60,7 @@ connectToNeighbours heightMap positionsIds pos = map (searchForId positionsIds p
 
 sndPart :: IO ()
 sndPart = do
-    input <- parseInput
-    let heightMap = Matrix.fromLists input
+    heightMap <- parseInput
     let positions = allPositions heightMap
     let positionsIds = zip positions [1..length positions]
     let edges = concatMap (connectToNeighbours heightMap positionsIds) positions
