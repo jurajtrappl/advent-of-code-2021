@@ -2,7 +2,6 @@
 
 import qualified Data.Matrix as Matrix
 import Data.Maybe (isJust)
-import Data.Matrix (zero)
 import Data.Functor ((<&>))
 
 type Octopuses = Matrix.Matrix Int
