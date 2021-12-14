@@ -15,8 +15,7 @@ parsePairInsertionRule r = let splitted = splitOn " -> " r
 parseInput :: IO (PolymerTemplate, InsertionRules)
 parseInput = do
     sections <- fmap (splitWhen (== "") . lines) (readFile "14.in")
-    let (template, rules) = bimap head (map parsePairInsertionRule) (head sections, last sections)
-    return (template, Map.fromList rules)
+    return $ bimap head (Map.fromList . map parsePairInsertionRule) (head sections, last sections)
 
 windowsOf :: Int -> [a] -> [[a]]
 windowsOf size (x:xs)
