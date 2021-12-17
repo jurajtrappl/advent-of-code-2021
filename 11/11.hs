@@ -58,7 +58,7 @@ flash energies toFlash = foldl increaseEnergy currentToZero neighbours
         neighbours = filter (not . isFlashed currentToZero) $ getNeighbours currentToZero toFlash
 
 countFlashed :: Octopuses -> Int
-countFlashed energies = length (filter (isFlashed energies) (allPositions energies))
+countFlashed energies = length $ filter (isFlashed energies) (allPositions energies)
 
 step :: Int -> Octopuses -> Int
 step 0 energies = 0
