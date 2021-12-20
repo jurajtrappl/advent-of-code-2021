@@ -1,67 +1,61 @@
-import qualified Data.Heap as Heap
 import qualified Data.Matrix as Matrix
 import Data.Maybe (isJust, fromJust)
 import Data.Functor ((<&>))
-import Data.List (sortBy)
-import Data.Function (on)
+import Data.List (foldl')
 
-type Distance = Integer
 type Location = (Int, Int)
 type RiskLevel = Integer
-type RiskLevelMap = Matrix.Matrix (RiskLevel, Distance)
-type Queue = [Location]
-type MinimumHeap = Heap.MinPrioHeap Distance Location
+type RiskLevelMap = Matrix.Matrix Int
+type SumMap = Matrix.Matrix Int
 
-upperBound :: Integer
-upperBound = 10^7
-
-unsafeRead :: String -> (RiskLevel, Distance)
-unsafeRead s = (read s :: Integer, upperBound)
+unsafeReadInt :: String -> Int
+unsafeReadInt s = read s :: Int
 
 parseInput :: IO RiskLevelMap
-parseInput = fmap (map (map (unsafeRead . (:[]))) . lines) (readFile "15.in") <&> Matrix.fromLists
+parseInput = fmap (map (map (unsafeReadInt . (:[]))) . lines) (readFile "15.in") <&> Matrix.fromLists
 
-isValidLocation :: RiskLevelMap -> Location -> Bool
-isValidLocation riskLevelMap (r, c) = isJust $ Matrix.safeGet r c riskLevelMap
+indices :: RiskLevelMap -> [Location]
+indices riskLevelMap = [(x, y) | x <- [1..Matrix.nrows riskLevelMap], y <- [1..Matrix.ncols riskLevelMap]]
 
-getNeighbours :: RiskLevelMap -> Location -> [Location]
-getNeighbours riskLevelMap (r, c) = filter (isValidLocation riskLevelMap) [(r - 1, c), (r, c + 1), (r + 1, c), (r, c - 1)]
+isValidLocation :: Location -> SumMap -> Bool
+isValidLocation (x, y) = isJust . Matrix.safeGet x y
 
-decreasePriority :: MinimumHeap -> Location -> Distance -> MinimumHeap
-decreasePriority heap location newDistance = Heap.insert (newDistance, location) without
-    where without = Heap.fromList $ filter (\(_, loc) -> loc /= location) $ Heap.toList heap
+getGridNeighbours :: SumMap -> Location -> [Location]
+getGridNeighbours sumMap l@(x, y) = filter (`isValidLocation` sumMap) [(x, y - 1), (x - 1, y)]
 
-relaxNeighbours :: MinimumHeap -> RiskLevelMap -> Location -> [Location] -> (MinimumHeap, RiskLevelMap)
-relaxNeighbours heap riskLevelMap _ [] = (heap, riskLevelMap)
-relaxNeighbours heap riskLevelMap current (n:ns)
-    | currentDistance + neighboursRiskLevel < neighboursDistance = relaxNeighbours relaxedHeap relaxedRiskLevelMap current ns
-    | otherwise = relaxNeighbours heap riskLevelMap current ns
-    where (currentRiskLevel, currentDistance) = riskLevelMap Matrix.! current
-          (neighboursRiskLevel, neighboursDistance) = riskLevelMap Matrix.! n
-          relaxed = (neighboursRiskLevel, currentDistance + neighboursRiskLevel)
-          relaxedRiskLevelMap = Matrix.setElem relaxed n riskLevelMap
-          relaxedHeap = decreasePriority heap n (currentDistance + neighboursRiskLevel)
+modifyLocation :: RiskLevelMap -> SumMap -> Location -> SumMap
+modifyLocation riskLevelMap sumMap l@(x, y) = Matrix.setElem newValue l sumMap
+    where neighboursValues = map (sumMap Matrix.!) $ getGridNeighbours sumMap l
+          newValue = if null neighboursValues then 0 else minimum neighboursValues + riskLevel
+          riskLevel = riskLevelMap Matrix.! l
 
-dijkstra :: RiskLevelMap -> MinimumHeap -> RiskLevelMap
-dijkstra riskLevelMap heap
-    | Heap.isEmpty heap = riskLevelMap
-    | otherwise = dijkstra relaxedRiskLevelMap relaxedHeap
-    where (currentDistance, currentLocation) = fromJust $ Heap.viewHead heap
-          neighbours = getNeighbours riskLevelMap currentLocation
-          (relaxedHeap, relaxedRiskLevelMap) = relaxNeighbours (Heap.drop 1 heap) riskLevelMap currentLocation neighbours
-
-fstPart :: IO Integer
+fstPart :: IO ()
 fstPart = do
     riskLevelMap <- parseInput
-    let entryRiskLevel = riskLevelMap Matrix.! (1, 1)
-    let initRiskLevelMap = Matrix.setElem (fst entryRiskLevel, 0) (1, 1) riskLevelMap
-    let initMinHeap = Heap.fromList ((0, (1, 1)) : tail [(upperBound, (r, c)) | r <- [1..Matrix.nrows initRiskLevelMap], c <- [1..Matrix.ncols initRiskLevelMap]])
-    return $ snd $ dijkstra initRiskLevelMap initMinHeap Matrix.! (Matrix.nrows initRiskLevelMap, Matrix.ncols initRiskLevelMap)
+    let sumMap = Matrix.zero (Matrix.ncols riskLevelMap) (Matrix.nrows riskLevelMap)
+    let summed = foldl (modifyLocation riskLevelMap) sumMap (indices riskLevelMap)
+    print $ summed Matrix.! (Matrix.nrows sumMap, Matrix.ncols sumMap)
 
 addOne :: RiskLevelMap -> RiskLevelMap
-addOne = fmap (\(e, d) -> if e == 9 then (1, d) else if e == 8 then (9, d) else (mod (e + 1) 9, d))
+addOne = fmap (\e -> if e == 9 then 1 else if e == 8 then 9 else mod (e + 1) 9)
 
 rowAdd :: RiskLevelMap -> Int -> [RiskLevelMap]
 rowAdd _ 0 = []
 rowAdd riskLevelMap n = added : rowAdd added (n - 1)
     where added = addOne riskLevelMap
+
+constructGrid :: RiskLevelMap -> RiskLevelMap
+constructGrid first = foldl' (Matrix.<->) firstRow [secondRow, thirdRow, fourthRow, fifthRow]
+    where firstRow = foldl' (Matrix.<|>) first (rowAdd first 4)
+          secondRow = foldl' (Matrix.<|>) (addOne first) (rowAdd (addOne first) 4)
+          thirdRow = foldl' (Matrix.<|>) (addOne $ addOne first) (rowAdd (addOne $ addOne first) 4)
+          fourthRow = foldl' (Matrix.<|>) (addOne $ addOne $ addOne first) (rowAdd (addOne $ addOne $ addOne first) 4)
+          fifthRow = foldl' (Matrix.<|>) (addOne $ addOne $ addOne $ addOne first) (rowAdd (addOne $ addOne $ addOne $ addOne first) 4)
+
+sndPart :: IO ()
+sndPart = do
+    riskLevelMap <- parseInput
+    let extendedRiskLevelMap = constructGrid riskLevelMap
+    let sumMap = Matrix.zero (Matrix.ncols extendedRiskLevelMap) (Matrix.nrows extendedRiskLevelMap)
+    let summed = foldl' (modifyLocation extendedRiskLevelMap) sumMap (indices extendedRiskLevelMap)
+    print $ summed Matrix.! (Matrix.nrows sumMap, Matrix.ncols sumMap)
